@@ -25,8 +25,7 @@ public:
 
     HotStuffNode (void);
     virtual ~HotStuffNode (void);
-    int             N;                                  // 总节点数
-
+    int N;
     uint32_t        m_id;                               // node id
     Ptr<Socket>     m_socket;                           // listening socket
     std::map<Ipv4Address, Ptr<Socket>> m_peersSockets;  // peer sockets map
@@ -59,6 +58,20 @@ public:
     std::map<std::string, Node_t*> nodes; // node storage
     bool is_leader;                   // leader status
     int n_replicas;                   // total number of replicas
+
+    // Benchmarking parameters
+    static int tx_size;               // Size of transaction in bytes
+    static double network_delay;      // Network delay in seconds
+    uint32_t messages_sent;           // Counter for sent messages
+    uint32_t messages_received;       // Counter for received messages
+    double total_latency;            // Sum of all message latencies
+    std::map<std::string, double> message_timestamps;  // Store send times for latency calculation
+    
+    // Benchmarking methods
+    void LogMessageSent(const std::string& msg_id);
+    void LogMessageReceived(const std::string& msg_id);
+    double GetAverageLatency() const;
+    uint32_t GetMessageCount() const;
 
     // Protocol methods
     bool SafeNode(Node_t* node, QC_t* qc);

@@ -12,13 +12,8 @@ NS_LOG_COMPONENT_DEFINE ("BlockchainSimulator");
 // 创建网络
 void startSimulator (int N)
 {
-  std::cout << "BEGININGa" << std::endl;
-
   NodeContainer nodes;
-  std::cout << "BEGININGb" << std::endl;
-
   nodes.Create (N);
-  std::cout << "BEGININGc" << std::endl;
 
   NetworkHelper networkHelper (N);
   // 默认pointToPint只能连接两个节点，需要手动连接
@@ -32,11 +27,9 @@ void startSimulator (int N)
 
   InternetStackHelper stack;
   stack.Install (nodes);
-  std::cout << "BEGINING3" << std::endl;
 
   Ipv4AddressHelper address;
   address.SetBase ("1.0.0.0", "255.255.255.0");
-  std::cout << "BEGINING4" << std::endl;
 
   // 网络节点两两建立连接
   for (int i = 0; i < N; i++) {
@@ -57,7 +50,6 @@ void startSimulator (int N)
           address.NewNetwork();
       }
   }
-  std::cout << "BEGINING5" << std::endl;
 
   ApplicationContainer nodeApp = networkHelper.Install (nodes);
 
@@ -72,8 +64,6 @@ void startSimulator (int N)
 int
 main (int argc, char *argv[])
 {
-  std::cout << "BEGINING1" << std::endl;
-
   CommandLine cmd;
   cmd.Parse (argc, argv);
   
@@ -85,7 +75,6 @@ main (int argc, char *argv[])
   // 1.need changed to a specific protocol class
   LogComponentEnable ("HotStuffNode", LOG_LEVEL_INFO);
   // ============== 10 nos
-  std::cout << "BEGINING2" << std::endl;
 
   auto startTime = std::chrono::high_resolution_clock::now();
 

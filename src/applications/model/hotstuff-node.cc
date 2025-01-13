@@ -37,12 +37,57 @@ HotStuffNode::GetTypeId (void)
     return tid;
 }
 
+// Initialize static members
+int HotStuffNode::tx_size = 4096;  // 4KB default transaction size
+double HotStuffNode::network_delay = 0.001;  // 100ms default network delay
+int tx_speed = 8000; //tps
+double timeout = 0.05;  
+int num = tx_speed / (1000 / (timeout * 1000)); 
+
+int totalSize = num * tx_speed;
 HotStuffNode::HotStuffNode(void) {
     currentView = 0;
     highQC = nullptr;
     lockedQC = nullptr;
     committedQC = nullptr;
     is_leader = false;
+    
+    // Initialize benchmarking counters
+    messages_sent = 0;
+    messages_received = 0;
+    total_latency = 0.0;
+}
+
+void 
+HotStuffNode::LogMessageSent(const std::string& msg_id) 
+{
+    messages_sent++;
+    message_timestamps[msg_id] = Simulator::Now().GetSeconds();
+}
+
+void 
+HotStuffNode::LogMessageReceived(const std::string& msg_id) 
+{
+    messages_received++;
+    auto sent_time = message_timestamps[msg_id];
+    if (sent_time > 0) {
+        double latency = Simulator::Now().GetSeconds() - sent_time;
+        total_latency += latency;
+        NS_LOG_INFO("Message " << msg_id << " latency: " << latency << "s");
+    }
+}
+
+double 
+HotStuffNode::GetAverageLatency() const 
+{
+    if (messages_received == 0) return 0;
+    return total_latency / messages_received;
+}
+
+uint32_t 
+HotStuffNode::GetMessageCount() const 
+{
+    return messages_sent;
 }
 
 HotStuffNode::~HotStuffNode(void) {
@@ -141,12 +186,6 @@ HotStuffNode::HandleRead (Ptr<Socket> socket)
     }
 }
 
-void 
-HotStuffNode::StopApplication ()
-{
-    // printVector(values);
-} 
-
 bool 
 HotStuffNode::SafeNode(HotStuffNode::Node_t* node, HotStuffNode::QC_t* qc)
 {
@@ -165,7 +204,8 @@ HotStuffNode::UpdateHighQC(QC_t* qc)
         highQC = nodes[qc->node_hash];
     }
 }
-
+void
+HotStuffNode::StopApplication(){}
 void 
 HotStuffNode::OnReceiveProposal(Node_t* node)
 {
@@ -350,24 +390,60 @@ HotStuffNode::getPacketContent(Ptr<Packet> packet, Address from)
     return std::string(totalStream.str());
 }
 
+// Initialize static parameters at file scope
+//int tx_size = 200;                // size of tx in KB
+//double network_delay = 0.1;        // network delay in seconds
+
+void 
+SendPacket(Ptr<Socket> socketClient, Ptr<Packet> p) {
+    socketClient->Send(p);
+}
+
 void 
 HotStuffNode::Send(uint8_t* data, int size)
 {
-    Ptr<Packet> p = Create<Packet> (data, size);
+    // Create packet of specified size
+    uint8_t* padded_data = new uint8_t[tx_size];
+    // Copy original data
+    memcpy(padded_data, data, std::min(size, tx_size));
+    // Pad remaining space if needed
+    if (size < tx_size) {
+        memset(padded_data + size, '0', tx_size - size);
+    }
+    
+    Ptr<Packet> p = Create<Packet> (padded_data, totalSize);
+    
+    // Send to all peers with network delay
     std::vector<Ipv4Address>::iterator iter = m_peersAddresses.begin();
     while(iter != m_peersAddresses.end()) {
         Ptr<Socket> socketClient = m_peersSockets[*iter];
-        socketClient->Send(p);
+        // Schedule send with network delay using ns3 Simulator
+        Simulator::Schedule(Seconds(network_delay), SendPacket, socketClient, p);
         iter++;
     }
+    
+    delete[] padded_data;
 }
 
 void 
 HotStuffNode::Send(uint8_t* data, int size, Address from)
 {
-    Ptr<Packet> p = Create<Packet> (data, size);
-    Ptr<Socket> socketClient = m_peersSockets[InetSocketAddress::ConvertFrom(from).GetIpv4 ()];
-    socketClient->Send(p);
+    // Create packet of specified size
+    uint8_t* padded_data = new uint8_t[tx_size];
+    // Copy original data
+    memcpy(padded_data, data, std::min(size, tx_size));
+    // Pad remaining space if needed
+    if (size < tx_size) {
+        memset(padded_data + size, '0', tx_size - size);
+    }
+    
+    Ptr<Packet> p = Create<Packet> (padded_data, totalSize);
+    Ptr<Socket> socketClient = m_peersSockets[InetSocketAddress::ConvertFrom(from).GetIpv4()];
+    
+    // Schedule send with network delay using ns3 Simulator
+    Simulator::Schedule(Seconds(network_delay), SendPacket, socketClient, p);
+    
+    delete[] padded_data;
 }
 
 void 
