@@ -1,0 +1,179 @@
+#ifndef HOTSTUFF_NODE_H
+#define HOTSTUFF_NODE_H
+
+#include <algorithm>
+#include "ns3/application.h"
+#include "ns3/event-id.h"
+#include "ns3/ptr.h"
+#include "ns3/traced-callback.h"
+#include "ns3/address.h"
+#include "ns3/boolean.h"
+#include "ns3/buffer.h"
+#include "ns3/packet.h"
+#include <map>
+#include <memory>
+#include <chrono>
+
+namespace ns3 {
+
+class HotStuffNode : public Application 
+{
+public:
+    static TypeId GetTypeId (void);
+    HotStuffNode(void);
+    virtual ~HotStuffNode(void);
+
+    // Benchmarking parameters
+    static int tx_size;                    
+    static int random_delay;               
+    static std::chrono::time_point<std::chrono::high_resolution_clock> start_time;
+    static int total_commits;              
+    static int total_messages;             
+    static double total_latency;           
+    static double base_timeout;
+    static double max_timeout;
+
+    enum NodeType {
+        TYPE_GENERIC = 0,
+        TYPE_PREPARE = 1,
+        TYPE_PRECOMMIT = 2,
+        TYPE_COMMIT = 3
+    };
+
+    // Smart pointer typedefs
+    typedef std::shared_ptr<struct Node> NodePtr;
+    typedef std::shared_ptr<struct QC> QCPtr;
+    typedef std::shared_ptr<struct NewViewMsg> NewViewMsgPtr;
+
+    struct Command {
+        std::string data;
+        uint32_t client_id;
+        uint32_t timestamp;
+
+        void Serialize(Buffer::Iterator& start) const;
+        uint32_t Deserialize(Buffer::Iterator& start);
+        uint32_t GetSerializedSize(void) const;
+    };
+
+    struct ThresholdSignature {
+        std::vector<std::string> partial_sigs;
+        std::string combined_sig;
+        
+        void Serialize(Buffer::Iterator& start) const;
+        uint32_t Deserialize(Buffer::Iterator& start);
+        uint32_t GetSerializedSize(void) const;
+        
+        bool Verify();
+        void Combine();
+    };
+
+    struct Node {
+        NodePtr parent;
+        Command cmd;
+        QCPtr justify;
+        int view;
+        int height;
+        NodeType type;
+        bool executed;
+        std::string hash;
+
+        void Serialize(Buffer::Iterator& start) const;
+        uint32_t Deserialize(Buffer::Iterator& start);
+        uint32_t GetSerializedSize(void) const;
+        
+        std::string ComputeHash() const;
+        bool VerifyParentHash() const;
+        bool HasValidJustification() const;
+    };
+
+    struct QC {
+        int view_number;
+        NodePtr node;
+        ThresholdSignature signature;
+        NodeType type;
+
+        void Serialize(Buffer::Iterator& start) const;
+        uint32_t Deserialize(Buffer::Iterator& start);
+        uint32_t GetSerializedSize(void) const;
+        
+        bool IsValid() const;
+        bool MatchesNode(const NodePtr& check_node) const;
+    };
+
+    struct NewViewMsg {
+        int new_view;
+        QCPtr high_qc;
+        ThresholdSignature signature;
+
+        void Serialize(Buffer::Iterator& start) const;
+        uint32_t Deserialize(Buffer::Iterator& start);
+        uint32_t GetSerializedSize(void) const;
+    };
+
+    // Protocol state
+    QCPtr generic_qc;
+    QCPtr locked_qc;
+    QCPtr prepare_qc;
+    QCPtr precommit_qc;
+    QCPtr commit_qc;
+    
+    std::map<std::string, NodePtr> nodes;
+    NodePtr current_proposal;
+    
+    // View change state
+    std::map<int, std::vector<NewViewMsgPtr>> new_view_msgs;
+    EventId view_change_timer;
+    double view_timeout;
+    
+    // Node identification and networking
+    uint32_t m_id;
+    int N;                          // Total number of nodes
+    int f;                          // Maximum number of faulty nodes
+    int view_number;                // Current view number
+    bool is_leader;                // Leader status
+
+    Ptr<Socket> m_socket;
+    std::map<Ipv4Address, Ptr<Socket>> m_peersSockets;
+    Address m_local;
+    std::vector<Ipv4Address> m_peersAddresses;
+
+    void SetPeersAddresses(const std::vector<Ipv4Address> &peers);
+    virtual void StartApplication(void);
+
+protected:
+    virtual void DoDispose (void);
+    virtual void StopApplication(void);
+
+private:
+    // Message handlers with proper NS3 packet handling
+    void HandleRead (Ptr<Socket> socket);
+    void HandleAccept (Ptr<Socket> socket, const Address& from);
+    void HandlePeerClose (Ptr<Socket> socket);
+    void HandlePeerError (Ptr<Socket> socket);
+    
+    // Serialization methods
+    std::string SerializeNode(const NodePtr& node);
+    std::string SerializeQC(const QCPtr& qc);
+    NodePtr DeserializeNode(const std::string& data);
+    QCPtr DeserializeQC(const std::string& data);
+    
+    // Packet creation and processing
+    Ptr<Packet> CreatePacket(uint8_t type, const Buffer& content);
+    void ProcessPacket(Ptr<Packet> packet, Address from);
+    
+    // Protocol methods
+    void StartViewChange(int new_view);
+    void ProcessNewView(const NewViewMsgPtr& msg);
+    void OnViewTimeout(void);
+    void AdvanceView(void);
+    void CreateProposal(void);
+    void OnReceiveProposal(NodePtr proposal);
+    bool IsLeader(int view);
+    
+    // Cleanup method
+    void CleanupState(void);
+};
+
+} // namespace ns3
+
+#endif
