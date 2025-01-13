@@ -88,37 +88,36 @@ main (int argc, char *argv[])
   std::cout << "BEGINING2" << std::endl;
 
   auto startTime = std::chrono::high_resolution_clock::now();
-  std::cout << "BEGINING3" << std::endl;
 
-  startSimulator(std::stoi(argv[1]));
+  // startSimulator(std::stoi(argv[1]));
+  startSimulator(8);
   auto endTime = std::chrono::high_resolution_clock::now();
   auto secondsTime = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
-  std::cout << "BEGINING3" << std::endl;
 
   std::cout << "Total Time 8 nos: " << secondsTime << std::endl;
-  // ========================= 32 nos 
-  //  startTime = std::chrono::high_resolution_clock::now();
-  // startSimulator(32);
-  //  endTime = std::chrono::high_resolution_clock::now();
-  //  secondsTime = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
+  //========================= 32 nos 
+   startTime = std::chrono::high_resolution_clock::now();
+  startSimulator(32);
+   endTime = std::chrono::high_resolution_clock::now();
+   secondsTime = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
 
-  // std::cout << "Total Time 32 nos: " << secondsTime << std::endl;
+  std::cout << "Total Time 32 nos: " << secondsTime << std::endl;
 
-  // // ============================= 64 nos
-  //  startTime = std::chrono::high_resolution_clock::now();
-  // startSimulator(64);
-  //  endTime = std::chrono::high_resolution_clock::now();
-  //  secondsTime = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
+  // ============================= 64 nos
+   startTime = std::chrono::high_resolution_clock::now();
+  startSimulator(64);
+   endTime = std::chrono::high_resolution_clock::now();
+   secondsTime = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
 
-  // std::cout << "Total Time 64 nos: " << secondsTime << std::endl;
+  std::cout << "Total Time 64 nos: " << secondsTime << std::endl;
 
 
-  // // ============================= 100 nos
-  //    startTime = std::chrono::high_resolution_clock::now();
-  // startSimulator(128);
-  //  endTime = std::chrono::high_resolution_clock::now();
-  //  secondsTime = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
+  // ============================= 100 nos
+     startTime = std::chrono::high_resolution_clock::now();
+  startSimulator(128);
+   endTime = std::chrono::high_resolution_clock::now();
+   secondsTime = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
 
-  // std::cout << "Total Time 128 nos: " << secondsTime << std::endl;
+  std::cout << "Total Time 128 nos: " << secondsTime << std::endl;
   return 0;
 }
