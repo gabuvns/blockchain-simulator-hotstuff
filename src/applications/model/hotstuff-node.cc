@@ -162,6 +162,12 @@ HotStuffNode::HandleRead (Ptr<Socket> socket)
                     break;
                 }
                 case PRECOMMIT:
+                {
+                    // Handle pre-commit message
+                    Node_t* node = deserializeNode(msg.substr(1));
+                    OnReceivePreCommit(node);
+                    break;
+                }
                 case COMMIT:
                 {
                     // Handle vote messages
@@ -502,6 +508,26 @@ HotStuffNode::OnReceiveVote(std::string vote, HotStuffNode::Node_t* node)
             }
             Send((uint8_t*)msg.c_str(), msg.length());
         }
+    }
+}
+
+void 
+HotStuffNode::OnReceivePreCommit(Node_t* node)
+{
+    if (SafeNode(node, &node->justify)) {
+        // Update the locked QC if this node extends from our prepare phase
+        if (node->justify.view > (lockedQC ? lockedQC->justify.view : -1)) {
+            lockedQC = node;
+        }
+
+        // Create and send vote for the pre-commit phase
+        std::string vote = CreateVote(node);
+        std::string msg = std::to_string(COMMIT) + vote;
+        Send((uint8_t*)msg.c_str(), msg.length());
+
+        // Log message for benchmarking
+        std::string msg_id = "precommit_" + node->hash;
+        LogMessageReceived(msg_id);
     }
 }
 

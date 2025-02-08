@@ -81,7 +81,7 @@ public:
     void OnReceiveNewView(QC_t* qc);
     void BroadcastPrePrepare(Node_t* node);
     void CreateNewQC(Node_t* node, std::vector<std::string> votes);
-    
+    void OnReceivePreCommit(Node_t* node);  // Changed from QC_t* to Node_t*
     // Helper methods for node and message handling
     HotStuffNode::Node_t* deserializeNode(const std::string& data);
     HotStuffNode::QC_t* deserializeQC(const std::string& data);
