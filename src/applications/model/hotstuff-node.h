@@ -57,7 +57,7 @@ public:
     Node_t* committedQC;                // last committed QC node
     std::map<std::string, Node_t*> nodes; // node storage
     bool is_leader;                   // leader status
-    int n_replicas;                   // total number of replicas
+    int n_replicas = 8;                   // total number of replicas
 
     // Benchmarking parameters
     static int tx_size;               // Size of transaction in bytes

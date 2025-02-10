@@ -57,6 +57,21 @@ HotStuffNode::HotStuffNode(void) {
     messages_received = 0;
     total_latency = 0.0;
 }
+bool isNumeric(const std::string& str) {
+    // Check if string is empty
+    if (str.empty()) {
+        return false;
+    }
+
+    // Iterate through each character
+    for (char const &c : str) {
+        if (c < '0' || c > '9') {
+            return false;
+        }
+    }
+    
+    return true;
+}
 
 void 
 HotStuffNode::LogMessageSent(const std::string& msg_id) 
@@ -230,9 +245,9 @@ HotStuffNode::OnReceiveProposal(Node_t* node)
         nodes[node->hash] = node;
         
         // Update locked QC if needed
-        // if (IsPreCommitQC(&node->justify)) {
-        //     lockedQC = nodes[node->justify.node_hash];
-        // }
+        if (IsPreCommitQC(&node->justify)) {
+            lockedQC = nodes[node->justify.node_hash];
+        }
     }
 }
 
@@ -260,7 +275,14 @@ HotStuffNode::deserializeNode(const std::string& data)
                 next = data.find('|', pos);
                 
                 if (next != std::string::npos) {
-                    node->height = std::stoi(data.substr(pos+2, next - pos+1));
+
+                    int i =0;
+                    while (!isNumeric(data.substr(pos+i, 1))){
+                        i++;
+                    }
+
+                    node->height = std::stoi(data.substr(pos+i, 1));
+                    
                     pos = next + 1;
                     node->justify = *deserializeQC(data.substr(pos));
                 }
@@ -279,12 +301,22 @@ HotStuffNode::deserializeQC(const std::string& data)
     size_t next = data.find('|');
     
     if (next != std::string::npos) {
-        qc->view = std::stoi(data.substr(pos, next - pos));
+        int i =0;
+        while (!isNumeric(data.substr(pos+i, 1))){
+            i++;
+        }
+
+        qc->view = std::stoi(data.substr(pos+i,1));
         pos = next + 1;
         next = data.find('|', pos);
         
         if (next != std::string::npos) {
-            qc->height = std::stoi(data.substr(pos, next - pos));
+
+            i =0;
+            while (!isNumeric(data.substr(pos+i, 1))){
+                i++;
+            }
+            qc->height = std::stoi(data.substr(pos+i,1));
             pos = next + 1;
             next = data.find('|', pos);
             
@@ -346,14 +378,14 @@ HotStuffNode::CreateVote(Node_t* node)
     return vote;
 }
 
-// bool 
-// HotStuffNode::IsPreCommitQC(QC_t* qc)
-// {
-//     // Check if this QC represents a pre-commit phase completion
-//     // In HotStuff, this means the QC should have n-f valid signatures
-//     // and be from the prepare phase
-//     return qc != nullptr && qc->signatures.size() >= (2 * n_replicas / 3 + 1);
-// }
+bool 
+HotStuffNode::IsPreCommitQC(QC_t* qc)
+{
+    // Check if this QC represents a pre-commit phase completion
+    // In HotStuff, this means the QC should have n-f valid signatures
+    // and be from the prepare phase
+    return qc != nullptr && qc->signatures.size() >= (2 * n_replicas / 3 + 1);
+}
 
 std::string 
 HotStuffNode::serializeNode(Node_t* node)
@@ -414,7 +446,6 @@ void
 HotStuffNode::Send(uint8_t* data, int size)
 {
 
-    NS_LOG_INFO(data);
     
     // Create packet of specified size
     uint8_t* padded_data = new uint8_t[tx_size];
