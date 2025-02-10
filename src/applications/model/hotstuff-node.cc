@@ -44,7 +44,7 @@ int tx_speed = 8000; //tps
 double timeout = 0.05;  
 int num = tx_speed / (1000 / (timeout * 1000)); 
 
-int totalSize = num * tx_speed;
+int totalSize = num * HotStuffNode::tx_size;
 HotStuffNode::HotStuffNode(void) {
     currentView = 0;
     highQC = nullptr;
@@ -123,7 +123,12 @@ HotStuffNode::StartApplication ()
     // Set initial leader
     if (m_id == 0) {
         is_leader = true;
+        std::string msg = std::to_string(PREPARE);
+        Send((uint8_t*)msg.c_str(), msg.length());
+        
     }
+
+
 }
 
 void 
@@ -225,9 +230,9 @@ HotStuffNode::OnReceiveProposal(Node_t* node)
         nodes[node->hash] = node;
         
         // Update locked QC if needed
-        if (IsPreCommitQC(&node->justify)) {
-            lockedQC = nodes[node->justify.node_hash];
-        }
+        // if (IsPreCommitQC(&node->justify)) {
+        //     lockedQC = nodes[node->justify.node_hash];
+        // }
     }
 }
 
@@ -255,7 +260,7 @@ HotStuffNode::deserializeNode(const std::string& data)
                 next = data.find('|', pos);
                 
                 if (next != std::string::npos) {
-                    node->height = std::stoi(data.substr(pos, next - pos));
+                    node->height = std::stoi(data.substr(pos+2, next - pos+1));
                     pos = next + 1;
                     node->justify = *deserializeQC(data.substr(pos));
                 }
@@ -341,14 +346,14 @@ HotStuffNode::CreateVote(Node_t* node)
     return vote;
 }
 
-bool 
-HotStuffNode::IsPreCommitQC(QC_t* qc)
-{
-    // Check if this QC represents a pre-commit phase completion
-    // In HotStuff, this means the QC should have n-f valid signatures
-    // and be from the prepare phase
-    return qc != nullptr && qc->signatures.size() >= (2 * n_replicas / 3 + 1);
-}
+// bool 
+// HotStuffNode::IsPreCommitQC(QC_t* qc)
+// {
+//     // Check if this QC represents a pre-commit phase completion
+//     // In HotStuff, this means the QC should have n-f valid signatures
+//     // and be from the prepare phase
+//     return qc != nullptr && qc->signatures.size() >= (2 * n_replicas / 3 + 1);
+// }
 
 std::string 
 HotStuffNode::serializeNode(Node_t* node)
@@ -408,16 +413,19 @@ SendPacket(Ptr<Socket> socketClient, Ptr<Packet> p) {
 void 
 HotStuffNode::Send(uint8_t* data, int size)
 {
+
+    NS_LOG_INFO(data);
+    
     // Create packet of specified size
     uint8_t* padded_data = new uint8_t[tx_size];
     // Copy original data
     memcpy(padded_data, data, std::min(size, tx_size));
+
     // Pad remaining space if needed
     if (size < tx_size) {
         memset(padded_data + size, '0', tx_size - size);
     }
-    
-    Ptr<Packet> p = Create<Packet> (padded_data, totalSize);
+    Ptr<Packet> p = Create<Packet> (padded_data, tx_size);
     
     // Send to all peers with network delay
     std::vector<Ipv4Address>::iterator iter = m_peersAddresses.begin();
@@ -443,7 +451,7 @@ HotStuffNode::Send(uint8_t* data, int size, Address from)
         memset(padded_data + size, '0', tx_size - size);
     }
     
-    Ptr<Packet> p = Create<Packet> (padded_data, totalSize);
+    Ptr<Packet> p = Create<Packet> (padded_data, tx_size);
     Ptr<Socket> socketClient = m_peersSockets[InetSocketAddress::ConvertFrom(from).GetIpv4()];
     
     // Schedule send with network delay using ns3 Simulator
