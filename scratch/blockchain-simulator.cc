@@ -4,10 +4,60 @@
 #include "ns3/point-to-point-module.h"
 #include "ns3/applications-module.h"
 #include <chrono>
+#include <fstream>
+#include <iomanip>
+#include "ns3/hotstuff-node.h"
 
 using namespace ns3;
 
 NS_LOG_COMPONENT_DEFINE ("BlockchainSimulator");
+
+// Collect performance metrics from all nodes and save to a file
+void CollectMetrics(ApplicationContainer& nodeApps, int nodeCount, int txSize, double networkDelay) {
+  double totalLatency = 0;
+  uint32_t totalMessagesSent = 0;
+  uint32_t totalMessagesReceived = 0;
+  uint32_t nodesReachedConsensus = 0;
+  
+  std::ofstream outFile("blockchain_metrics_" + std::to_string(nodeCount) + 
+                        "_nodes_" + std::to_string(txSize) + "_txsize_" + 
+                        std::to_string(int(networkDelay*1000)) + "_ms.csv");
+  
+  outFile << "NodeID,MessagesSent,MessagesReceived,AvgLatency,ConsensusReached\n";
+  
+  for (uint32_t i = 0; i < nodeApps.GetN(); i++) {
+    Ptr<HotStuffNode> node = DynamicCast<HotStuffNode>(nodeApps.Get(i));
+    if (!node) {
+      NS_LOG_WARN("Node " << i << " is not a HotStuffNode");
+      continue;
+    }
+    
+    totalMessagesSent += node->GetMessageCount();
+    totalMessagesReceived += node->messages_received;
+    totalLatency += node->GetAverageLatency();
+    if (node->consensusReached) {
+      nodesReachedConsensus++;
+    }
+    
+    outFile << i << "," 
+            << node->GetMessageCount() << "," 
+            << node->messages_received << "," 
+            << std::fixed << std::setprecision(6) << node->GetAverageLatency() << "," 
+            << (node->consensusReached ? "1" : "0") << "\n";
+  }
+  
+  outFile.close();
+  
+  std::cout << "=== Performance Metrics for " << nodeCount << " nodes ===" << std::endl;
+  std::cout << "Nodes reaching consensus: " << nodesReachedConsensus << "/" << nodeCount 
+            << " (" << (nodesReachedConsensus * 100.0 / nodeCount) << "%)" << std::endl;
+  std::cout << "Average message latency: " << std::fixed << std::setprecision(6) 
+            << (totalLatency / nodeApps.GetN()) << "s" << std::endl;
+  std::cout << "Total messages sent: " << totalMessagesSent << std::endl;
+  std::cout << "Total messages received: " << totalMessagesReceived << std::endl;
+  std::cout << "Messages per node: " << (totalMessagesSent / nodeCount) << std::endl;
+  std::cout << "=====================================" << std::endl;
+}
 
 // Create optimized network topology for consensus
 // void startSimulator(int N)
@@ -91,8 +141,12 @@ NS_LOG_COMPONENT_DEFINE ("BlockchainSimulator");
 //   Simulator::Destroy();
 // }
 
-void startSimulator (int N)
+void startSimulator (int N, int txSize, double networkDelay, int txSpeed)
 {
+  // Set the HotStuffNode static variables before creating nodes
+  HotStuffNode::tx_size = txSize;
+  HotStuffNode::network_delay = networkDelay;
+  
   NodeContainer nodes;
   nodes.Create (N);
 
@@ -137,6 +191,10 @@ void startSimulator (int N)
   nodeApp.Stop (Seconds (30.0));
 
   Simulator::Run ();
+  
+  // Collect metrics before destroying the simulator
+  CollectMetrics(nodeApp, N, txSize, networkDelay);
+  
   Simulator::Destroy ();
 }
 
@@ -145,43 +203,74 @@ void startSimulator (int N)
 int
 main(int argc, char *argv[])
 {
+  int txSize = 256; // Default transaction size in bytes
+  double networkDelay = 0.1; // Default network delay in seconds (1ms)
+  int txSpeed = 10000; // Default transaction speed (TPS)
+  bool runNodeSeries = true; // Whether to run the series of node counts
+  int nodeCount = 8; // Default node count
+  bool enableLogging = false; // Whether to enable detailed logging
+  
   CommandLine cmd;
+  cmd.AddValue("txsize", "Transaction size in bytes", txSize);
+  cmd.AddValue("delay", "Network delay in seconds", networkDelay);
+  cmd.AddValue("txspeed", "Transaction speed (TPS)", txSpeed);
+  cmd.AddValue("nodes", "Number of nodes in the network", nodeCount);
+  cmd.AddValue("series", "Run simulations with 8, 32, 64 and 128 nodes", runNodeSeries);
+  cmd.AddValue("log", "Enable detailed logging", enableLogging);
   cmd.Parse(argc, argv);
   
   Time::SetResolution(Time::NS);
 
-  // Enable detailed logging
-  // LogComponentEnable("HotStuffNode", LOG_LEVEL_INFO);
-  // LogComponentEnable("BlockchainSimulator", LOG_LEVEL_INFO);
+  // Enable detailed logging if requested
+  if (enableLogging) {
+    LogComponentEnable("HotStuffNode", LOG_LEVEL_INFO);
+    LogComponentEnable("BlockchainSimulator", LOG_LEVEL_INFO);
+  }
   
-  NS_LOG_INFO("Starting simulation with 8 nodes");
-  auto startTime = std::chrono::high_resolution_clock::now();
-  startSimulator(8);
-  auto endTime = std::chrono::high_resolution_clock::now();
-  auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
-  std::cout << "Total Time 8 nodes: " << milliseconds.count() << "ms" << std::endl;
-  
-  NS_LOG_INFO("Starting simulation with 32 nodes");
-  startTime = std::chrono::high_resolution_clock::now();
-  startSimulator(32);
-  endTime = std::chrono::high_resolution_clock::now();
-  milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
-  std::cout << "Total Time 32 nodes: " << milliseconds.count() << "ms" << std::endl;
-  
-  NS_LOG_INFO("Starting simulation with 64 nodes");
-  startTime = std::chrono::high_resolution_clock::now();
-  startSimulator(64);
-  endTime = std::chrono::high_resolution_clock::now();
-  milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
-  std::cout << "Total Time 64 nodes: " << milliseconds.count() << "ms" << std::endl;
-  
-
-  NS_LOG_INFO("Starting simulation with 128 nodes");
-  startTime = std::chrono::high_resolution_clock::now();
-  startSimulator(128);
-  endTime = std::chrono::high_resolution_clock::now();
-  milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
-  std::cout << "Total Time 128 nodes: " << milliseconds.count() << "ms" << std::endl;
+  if (runNodeSeries) {
+    // Run the original series of simulations with different node counts
+    std::cout << "Running simulations with varying node counts..." << std::endl;
+    
+    NS_LOG_INFO("Starting simulation with 8 nodes");
+    auto startTime = std::chrono::high_resolution_clock::now();
+    startSimulator(8, txSize, networkDelay, txSpeed);
+    auto endTime = std::chrono::high_resolution_clock::now();
+    auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
+    std::cout << "Total Time 8 nodes: " << milliseconds.count() << "ms" << std::endl;
+    
+    NS_LOG_INFO("Starting simulation with 32 nodes");
+    startTime = std::chrono::high_resolution_clock::now();
+    startSimulator(32, txSize, networkDelay, txSpeed);
+    endTime = std::chrono::high_resolution_clock::now();
+    milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
+    std::cout << "Total Time 32 nodes: " << milliseconds.count() << "ms" << std::endl;
+    
+    NS_LOG_INFO("Starting simulation with 64 nodes");
+    startTime = std::chrono::high_resolution_clock::now();
+    startSimulator(64, txSize, networkDelay, txSpeed);
+    endTime = std::chrono::high_resolution_clock::now();
+    milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
+    std::cout << "Total Time 64 nodes: " << milliseconds.count() << "ms" << std::endl;
+    
+    NS_LOG_INFO("Starting simulation with 128 nodes");
+    startTime = std::chrono::high_resolution_clock::now();
+    startSimulator(128, txSize, networkDelay, txSpeed);
+    endTime = std::chrono::high_resolution_clock::now();
+    milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
+    std::cout << "Total Time 128 nodes: " << milliseconds.count() << "ms" << std::endl;
+  } else {
+    // Run a single simulation with the specified parameters
+    std::cout << "Running simulation with " << nodeCount << " nodes, "
+              << txSize << " byte transactions, "
+              << networkDelay * 1000 << "ms network delay, and "
+              << txSpeed << " TPS" << std::endl;
+              
+    auto startTime = std::chrono::high_resolution_clock::now();
+    startSimulator(nodeCount, txSize, networkDelay, txSpeed);
+    auto endTime = std::chrono::high_resolution_clock::now();
+    auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
+    std::cout << "Total simulation time: " << milliseconds.count() << "ms" << std::endl;
+  }
   
   return 0;
 }

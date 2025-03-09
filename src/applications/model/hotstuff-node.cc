@@ -38,9 +38,9 @@ HotStuffNode::GetTypeId (void)
 }
 
 // Initialize static members
-int HotStuffNode::tx_size = 256;  // Reduced from 4KB to 1KB default transaction size
-double HotStuffNode::network_delay = 0.001;  // Keeping the original 1ms network delay
-int tx_speed = 10000; //tps
+int HotStuffNode::tx_size;  // Reduced from 4KB to 1KB default transaction size
+double HotStuffNode::network_delay;  // Keeping the original 1ms network delay
+int tx_speed = 8000; //tps
 double timeout = 0.05;  
 int num = tx_speed / (1000 / (timeout * 1000)); 
 
@@ -683,9 +683,6 @@ HotStuffNode::getPacketContent(Ptr<Packet> packet, Address from)
     return result;
 }
 
-// Initialize static parameters at file scope
-//int tx_size = 200;                // size of tx in KB
-//double network_delay = 0.1;        // network delay in seconds
 
 void 
 SendPacket(Ptr<Socket> socketClient, Ptr<Packet> p) {
@@ -696,8 +693,8 @@ void
 HotStuffNode::Send(uint8_t* data, int size)
 {
     // Calculate actual size needed (rather than padding everything to tx_size)
-    int actual_size = std::min(size, tx_size);
-    
+    // int actual_size = std::min(size, tx_size);
+    int actual_size = tx_size; 
     // Create packet of appropriate size
     uint8_t* packet_data = new uint8_t[actual_size];
     
@@ -731,7 +728,8 @@ void
 HotStuffNode::Send(uint8_t* data, int size, Address from)
 {
     // Calculate actual size needed (rather than padding everything to tx_size)
-    int actual_size = std::min(size, tx_size);
+    // int actual_size = std::min(size, tx_size);
+    int actual_size = tx_size; 
     
     // Create packet of appropriate size
     uint8_t* packet_data = new uint8_t[actual_size];
