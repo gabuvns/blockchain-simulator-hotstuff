@@ -38,8 +38,8 @@ HotStuffNode::GetTypeId (void)
 }
 
 // Initialize static members
-int HotStuffNode::tx_size = 4046;  // Reduced from 4KB to 1KB default transaction size
-double HotStuffNode::network_delay = 0.1;  // Keeping the original 1ms network delay
+int HotStuffNode::tx_size = 256;  // Reduced from 4KB to 1KB default transaction size
+double HotStuffNode::network_delay = 0.001;  // Keeping the original 1ms network delay
 int tx_speed = 10000; //tps
 double timeout = 0.05;  
 int num = tx_speed / (1000 / (timeout * 1000)); 
@@ -198,10 +198,10 @@ HotStuffNode::HandleRead (Ptr<Socket> socket)
             std::string msg = getPacketContent(packet, from);
             
             // Check if consensus already reached - skip processing if done
-            if (consensusReached) {
-                NS_LOG_INFO("Node " << m_id << " already reached consensus, ignoring message");
-                continue;
-            }
+            // if (consensusReached) {
+            //     NS_LOG_INFO("Node " << m_id << " already reached consensus, ignoring message");
+            //     continue;
+            // }
             
             // Parse message type
             if (msg.empty()) {
@@ -794,7 +794,7 @@ HotStuffNode::OnReceiveVote(std::string vote, HotStuffNode::Node_t* node)
 {
     // Log phase timing
     Time phaseTime = Simulator::Now() - phaseStartTime;
-    NS_LOG_INFO("Node " << m_id << " commit phase took " << phaseTime.GetSeconds() << "s");
+    NS_LOG_INFO("Node " << m_id << " commit phase took " << phaseTime.GetMilliSeconds() << "s");
     phaseStartTime = Simulator::Now();
     
     if (is_leader) {
