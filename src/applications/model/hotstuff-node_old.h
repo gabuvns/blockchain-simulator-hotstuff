@@ -9,8 +9,6 @@
 // #include "ns3/address.h"
 // #include "ns3/boolean.h"
 // #include <map>
-// #include <vector>
-// #include <string>
 
 // namespace ns3 {
 
@@ -54,35 +52,26 @@
 
 //     // Protocol state
 //     int currentView;                  // current view number
-//     int currentPhase;                 // current phase (0:prepare, 1:precommit, 2:commit)
-//     Node_t* highQC;                   // highest QC node
-//     Node_t* lockedQC;                 // locked QC node
-//     Node_t* committedQC;              // last committed QC node
+//     Node_t* highQC;                     // highest QC node
+//     Node_t* lockedQC;                   // locked QC node
+//     Node_t* committedQC;                // last committed QC node
 //     std::map<std::string, Node_t*> nodes; // node storage
 //     bool is_leader;                   // leader status
-//     int n_replicas = 8;               // total number of replicas
-//     bool consensusReached;            // flag indicating if consensus has been reached
-
-//     // Batching support
-//     static const int BATCH_SIZE = 10;
-//     std::vector<std::string> pendingVotes;
-//     void SendBatchedVotes();
+//     int n_replicas;                   // total number of replicas
 
 //     // Benchmarking parameters
 //     static int tx_size;               // Size of transaction in bytes
 //     static double network_delay;      // Network delay in seconds
 //     uint32_t messages_sent;           // Counter for sent messages
 //     uint32_t messages_received;       // Counter for received messages
-//     double total_latency;             // Sum of all message latencies
+//     double total_latency;            // Sum of all message latencies
 //     std::map<std::string, double> message_timestamps;  // Store send times for latency calculation
     
-//     // Benchmarking and instrumentation methods
+//     // Benchmarking methods
 //     void LogMessageSent(const std::string& msg_id);
 //     void LogMessageReceived(const std::string& msg_id);
 //     double GetAverageLatency() const;
 //     uint32_t GetMessageCount() const;
-//     Time phaseStartTime;              // Timer for measuring phase duration
-//     Time consensusStartTime;          // Timer for measuring total consensus time
 
 //     // Protocol methods
 //     bool SafeNode(Node_t* node, QC_t* qc);
@@ -90,12 +79,9 @@
 //     void OnReceiveProposal(Node_t* node);
 //     void OnReceiveVote(std::string vote, Node_t* node);
 //     void OnReceiveNewView(QC_t* qc);
-//     void OnReceiveDecide(Node_t* node);
-//     void BroadcastForCurrentPhase(Node_t* node);
 //     void BroadcastPrePrepare(Node_t* node);
 //     void CreateNewQC(Node_t* node, std::vector<std::string> votes);
-//     void OnReceivePreCommit(Node_t* node);
-
+//     void OnReceivePreCommit(Node_t* node);  // Changed from QC_t* to Node_t*
 //     // Helper methods for node and message handling
 //     HotStuffNode::Node_t* deserializeNode(const std::string& data);
 //     HotStuffNode::QC_t* deserializeQC(const std::string& data);
@@ -113,7 +99,6 @@
 //     std::string getPacketContent(Ptr<Packet> packet, Address from);
 //     void Send (uint8_t* data, int size);
 //     void Send (uint8_t* data, int size, Address from);
-//     int CalculatePacketSize(const std::string& data);
 // };
 
 // enum MessageType

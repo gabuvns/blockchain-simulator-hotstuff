@@ -8,14 +8,14 @@
 #include "ns3/applications-module.h"
 
 // 2.need changed to the the specific header file
-#include "../model/hotstuff-node.h"
+// #include "../model/hotstuff-node.h"
 // #include "../model/paxos-node.h"
-// #include "../model/HotStuff-node.h"
+#include "../model/pbft-node.h"
 
 namespace ns3 {
     NetworkHelper::NetworkHelper(uint32_t totalNoNodes) {
         // 3.need changed to a specific typeId
-        m_factory.SetTypeId ("ns3::HotStuffNode");
+        m_factory.SetTypeId ("ns3::PbftNode");
         m_nodeNo = totalNoNodes;
     }
     
@@ -26,7 +26,7 @@ namespace ns3 {
         for (NodeContainer::Iterator i = c.Begin (); i != c.End (); i++)
         {
             // 4.need changed to a specific protocol class
-            Ptr<HotStuffNode> app = m_factory.Create<HotStuffNode> ();
+            Ptr<PbftNode> app = m_factory.Create<PbftNode> ();
             uint32_t nodeId = (*i)->GetId(); 
             app->m_id = nodeId;
             app->N = m_nodeNo;

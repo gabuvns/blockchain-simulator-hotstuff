@@ -21,7 +21,7 @@
 #include <map>
 
 // 全局变量 是所有节点间共用的
-int tx_size;
+
 int tx_speed;                  // 交易生成的速率，单位为op/s
 int n;
 int v;
@@ -30,9 +30,13 @@ float timeout;                   // 发送区块的间隔时间
 int n_round;
 
 namespace ns3 {
+
 NS_LOG_COMPONENT_DEFINE ("PbftNode");
 
 NS_OBJECT_ENSURE_REGISTERED (PbftNode);
+
+int PbftNode::tx_size = 256;     
+double PbftNode::network_delay=0.01;
 
 TypeId
 PbftNode::GetTypeId (void)
@@ -66,7 +70,7 @@ static int charToInt(char a) {
 float 
 getRandomDelay() {
 //   return ((rand() % 3) * 1.0 + 3) / 1000;
-    return 0.1;
+    return PbftNode::network_delay;
 }
 
 void
@@ -102,9 +106,12 @@ PbftNode::StartApplication ()
     v = 1;              // Número de visualizações
     n = 0;              // O número de sequência da transação da visualização atual
     leader = 0;
-    tx_size = 4112;      // 250 1 3.5
+    PbftNode::tx_size;     
+    PbftNode::network_delay;
+
     tx_speed = 8000;    // 1000 tx/s
     timeout = 0.05;      // 50 ms
+      
 
     block_num = 0;
     // Rodadas de consenso

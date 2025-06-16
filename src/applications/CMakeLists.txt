@@ -50,7 +50,7 @@ build_lib(
     model/udp-echo-server.h
     model/udp-server.h
     model/udp-trace-client.h
-    model/hotstuff-node.h
+    model/pbft-node.h
     helper/network-helper.h
   LIBRARIES_TO_LINK ${libinternet}
   TEST_SOURCES
