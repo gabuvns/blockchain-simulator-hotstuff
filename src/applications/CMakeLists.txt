@@ -24,7 +24,7 @@ build_lib(
     model/udp-echo-server.cc
     model/udp-server.cc
     model/udp-trace-client.cc
-    model/pbft-node.cc
+    model/raft-node.cc
     helper/network-helper.cc
   HEADER_FILES
     helper/bulk-send-helper.h
@@ -50,7 +50,7 @@ build_lib(
     model/udp-echo-server.h
     model/udp-server.h
     model/udp-trace-client.h
-    model/pbft-node.h
+    model/raft-node.h
     helper/network-helper.h
   LIBRARIES_TO_LINK ${libinternet}
   TEST_SOURCES

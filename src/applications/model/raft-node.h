@@ -35,7 +35,8 @@ class RaftNode : public Application
     
     Address         m_local;                            // 本节点地址
     std::vector<Ipv4Address>  m_peersAddresses;         // 邻节点列表
-
+    static int tx_size;               // Size of transaction in bytes
+    static double network_delay; 
     int             N;                                  // 总节点数
     int             is_leader;                          // 自己是否是leader
     int             has_voted;                          // 是否已经投票

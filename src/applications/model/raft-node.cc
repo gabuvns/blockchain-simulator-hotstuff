@@ -20,7 +20,6 @@
 #include <ctime>
 #include <map>
 #include <chrono>
-int tx_size = 4096;                    // the size of tx, in KB
 int tx_speed = 8000;                  // the rate of transaction generation, in op/s
 int randomDelay = 0.1;              // the random delay of message, in s
 std::chrono::time_point<std::chrono::high_resolution_clock> startTime;
@@ -31,6 +30,8 @@ namespace ns3 {
 NS_LOG_COMPONENT_DEFINE ("RaftNode");
 
 NS_OBJECT_ENSURE_REGISTERED (RaftNode);
+int RaftNode::tx_size;     
+double RaftNode::network_delay;
 
 TypeId
 RaftNode::GetTypeId (void)
@@ -64,7 +65,7 @@ static int charToInt(char a) {
 // 信息接收延迟 0 - 3 ms
 float 
 getRandomDelay() {
-  return randomDelay; 
+  return RaftNode::network_delay; 
 }
 
 // 选举超时时间 100 - 300 ms
@@ -121,6 +122,7 @@ RaftNode::StartApplication ()
 void 
 RaftNode::StopApplication ()
 {
+  exit;
   // NS_LOG_INFO ("At time " << Simulator::Now ().GetSeconds () << " finish the raft consensus");
   if (is_leader == 1) {
     NS_LOG_INFO ("Blocks:" << blockNum << " Rounds:" << round);
@@ -129,6 +131,7 @@ RaftNode::StopApplication ()
     auto secondsTime = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
     std::cout << "Tempo de execucao: " << secondsTime << std::endl;
   }
+
 }
 
 void 
@@ -329,7 +332,7 @@ RaftNode::Send(uint8_t data[], Address from)
 // 生成交易 每个交易1KB
 static uint8_t * generateTX (int num)
 {
-  int size = num * tx_size;
+  int size = num * RaftNode::tx_size;
   uint8_t *data = (uint8_t *)std::malloc (size);
   int i;
   for (i = 0; i < size; i++) {
@@ -348,7 +351,7 @@ RaftNode::SendTX (uint8_t data[], int num)
 { 
   NS_LOG_INFO("broadcast block round: " << round << ", time: " << Simulator::Now ().GetSeconds () << " s");
   Ptr<Packet> p;
-  int size = tx_size * num;
+  int size = RaftNode::tx_size * num;
   p = Create<Packet> (data, size);
   
   TypeId tid = TypeId::LookupByName ("ns3::UdpSocketFactory");

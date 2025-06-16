@@ -26,6 +26,6 @@
     #include <ns3/udp-echo-server.h>
     #include <ns3/udp-server.h>
     #include <ns3/udp-trace-client.h>
-    #include <ns3/pbft-node.h>
+    #include <ns3/raft-node.h>
     #include <ns3/network-helper.h>
 #endif 

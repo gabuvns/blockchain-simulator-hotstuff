@@ -1,4 +1,4 @@
-#include "ns3/pbft-node.h"
+#include "ns3/raft-node.h"
 
 #include "ns3/core-module.h"
 #include "ns3/network-module.h"
@@ -147,8 +147,8 @@ void startSimulator(int N)
 void startSimulator (int N, int txSize, double networkDelay, int txSpeed)
 {
   // Set the PbftNode static variables before creating nodes
-  PbftNode::tx_size = txSize;
-  PbftNode::network_delay = networkDelay;
+  RaftNode::tx_size = txSize;
+ RaftNode::network_delay = networkDelay;
   
   NodeContainer nodes;
   nodes.Create (N);
@@ -218,12 +218,12 @@ main(int argc, char *argv[])
 
   // Enable detailed logging if requested
   if (enableLogging) {
-    LogComponentEnable("PbftNode", LOG_LEVEL_INFO);
+    LogComponentEnable("RaftNode", LOG_LEVEL_INFO);
     LogComponentEnable("BlockchainSimulator", LOG_LEVEL_INFO);
   }
   
   if (runNodeSeries) {
-    std::ofstream outFile("outputPbftNodes.txt"); 
+    std::ofstream outFile("outputRaftNodes.txt"); 
     if (!outFile.is_open()) {
         std::cerr << "Error opening file." << std::endl;
         return 1;
@@ -241,11 +241,11 @@ main(int argc, char *argv[])
     // std::vector<int> nodeCountsF = {64};
 
 
-    // std::vector<int> txSizesF = {256}; // Transaction sizes in bytes
-    std::vector<int> txSizesF = {1024}; // Transaction sizes in bytes
+    std::vector<int> txSizesF = {256}; // Transaction sizes in bytes
+    // std::vector<int> txSizesF = {1024}; // Transaction sizes in bytes
 
-    // std::vector<double> networkDelaysF = {0.01}; // Transaction speeds in TPS
-    std::vector<double> networkDelaysF = { 0.1}; // Transaction speeds in TPS
+    std::vector<double> networkDelaysF = {0.01}; // Transaction speeds in TPS
+    // std::vector<double> networkDelaysF = { 0.1}; // Transaction speeds in TPS
 
     // Run simulations for each combination of parametersint 
 
@@ -255,7 +255,7 @@ main(int argc, char *argv[])
           std::vector<long long> results;
             outFile << std::endl << "Simulation " << nodes << " size " << txSize<< " delay " << networkDelay <<  std::endl;
 
-          for(int i = 0; i < 10; i++) {
+          for(int i = 0; i < 1; i++) {
             std::cout << "Simulation: " << networkDelay << " "<<  txSize<< " "<<  nodes<< " " <<i<< " " << std::endl;
 
             auto startTime = std::chrono::high_resolution_clock::now();

@@ -90,7 +90,7 @@ if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT
     "/home/gabuvns/ns3/newNs3/ns-allinone-3.43/ns-3.43/src/applications/model/udp-echo-server.h"
     "/home/gabuvns/ns3/newNs3/ns-allinone-3.43/ns-3.43/src/applications/model/udp-server.h"
     "/home/gabuvns/ns3/newNs3/ns-allinone-3.43/ns-3.43/src/applications/model/udp-trace-client.h"
-    "/home/gabuvns/ns3/newNs3/ns-allinone-3.43/ns-3.43/src/applications/model/pbft-node.h"
+    "/home/gabuvns/ns3/newNs3/ns-allinone-3.43/ns-3.43/src/applications/model/raft-node.h"
     "/home/gabuvns/ns3/newNs3/ns-allinone-3.43/ns-3.43/src/applications/helper/network-helper.h"
     "/home/gabuvns/ns3/newNs3/ns-allinone-3.43/ns-3.43/build/include/ns3/applications-module.h"
     )

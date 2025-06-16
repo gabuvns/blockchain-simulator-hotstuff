@@ -4,7 +4,7 @@
 #include "ns3/application-container.h"
 #include "ns3/node-container.h"
 #include "ns3/ipv4-address.h"
-#include "pbft-node.h"
+#include "raft-node.h"
 #include <vector>
 #include <map>
 
