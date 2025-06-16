@@ -83,7 +83,7 @@ printVector(std::vector<int> vec) {
 // Gerar transações Cada tamanho de transação KB
 static uint8_t * generateTX (int num)
 {
-  int size = num * tx_size;
+  int size = num * PbftNode::tx_size;
   uint8_t *data = (uint8_t *)std::malloc (size);
   int i;
   for (i = 0; i < size; i++) {

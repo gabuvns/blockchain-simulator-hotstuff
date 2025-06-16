@@ -24,7 +24,7 @@ build_lib(
     model/udp-echo-server.cc
     model/udp-server.cc
     model/udp-trace-client.cc
-    model/hotstuff-node.cc
+    model/pbft-node.cc
     helper/network-helper.cc
   HEADER_FILES
     helper/bulk-send-helper.h

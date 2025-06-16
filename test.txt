@@ -1,0 +1,64 @@
+[0/2] Re-checking globbed directories...
+[1/5] Building CXX object src/applications/CMakeFiles/applications.dir/helper/network-helper.cc.o
+[2/5] Building CXX object src/applications/CMakeFiles/applications.dir/model/hotstuff-node.cc.o
+/home/gabuvns/ns3/newNs3/ns-allinone-3.43/ns-3.43/src/applications/model/hotstuff-node.cc: In member function ‘void ns3::HotStuffNode::RotateLeader()’:
+/home/gabuvns/ns3/newNs3/ns-allinone-3.43/ns-3.43/src/applications/model/hotstuff-node.cc:246:23: warning: comparison of integer expressions of different signedness: ‘uint32_t’ {aka ‘unsigned int’} and ‘int’ [-Wsign-compare]
+  246 |     is_leader = (m_id == currentView % n_replicas);
+      |                  ~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/gabuvns/ns3/newNs3/ns-allinone-3.43/ns-3.43/src/applications/model/hotstuff-node.cc: In member function ‘void ns3::HotStuffNode::StartNewView()’:
+/home/gabuvns/ns3/newNs3/ns-allinone-3.43/ns-3.43/src/applications/model/hotstuff-node.cc:257:32: warning: ‘bool ns3::EventId::IsRunning() const’ is deprecated: Deprecated in ns-3.42: Use IsPending instead [-Wdeprecated-declarations]
+  257 |     if (proposalEvent.IsRunning()) {
+      |         ~~~~~~~~~~~~~~~~~~~~~~~^~
+In file included from /home/gabuvns/ns3/newNs3/ns-allinone-3.43/ns-3.43/src/core/model/simulator.h:12,
+                 from /home/gabuvns/ns3/newNs3/ns-allinone-3.43/ns-3.43/build/include/ns3/simulator.h:1,
+                 from /home/gabuvns/ns3/newNs3/ns-allinone-3.43/ns-3.43/src/applications/model/hotstuff-node.cc:9:
+/home/gabuvns/ns3/newNs3/ns-allinone-3.43/ns-3.43/src/core/model/event-id.h:102:10: note: declared here
+  102 |     bool IsRunning() const;
+      |          ^~~~~~~~~
+/home/gabuvns/ns3/newNs3/ns-allinone-3.43/ns-3.43/src/applications/model/hotstuff-node.cc: In member function ‘void ns3::HotStuffNode::update(Node_t*)’:
+/home/gabuvns/ns3/newNs3/ns-allinone-3.43/ns-3.43/src/applications/model/hotstuff-node.cc:312:41: warning: comparison of integer expressions of different signedness: ‘std::vector<std::__cxx11::basic_string<char> >::size_type’ {aka ‘long unsigned int’} and ‘int’ [-Wsign-compare]
+  312 |     if (node->justify.signatures.size() >= (2 * n_replicas / 3 + 1)) {
+      |         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/gabuvns/ns3/newNs3/ns-allinone-3.43/ns-3.43/src/applications/model/hotstuff-node.cc: In member function ‘void ns3::HotStuffNode::HandleRead(ns3::Ptr<ns3::Socket>)’:
+/home/gabuvns/ns3/newNs3/ns-allinone-3.43/ns-3.43/src/applications/model/hotstuff-node.cc:430:61: warning: comparison of integer expressions of different signedness: ‘std::vector<std::__cxx11::basic_string<char> >::size_type’ {aka ‘long unsigned int’} and ‘int’ [-Wsign-compare]
+  430 |                         if (node->justify.signatures.size() >= 2 * n_replicas/3 + 1) {
+      |                             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~
+/home/gabuvns/ns3/newNs3/ns-allinone-3.43/ns-3.43/src/applications/model/hotstuff-node.cc: In member function ‘virtual void ns3::HotStuffNode::StopApplication()’:
+/home/gabuvns/ns3/newNs3/ns-allinone-3.43/ns-3.43/src/applications/model/hotstuff-node.cc:501:29: warning: ‘bool ns3::EventId::IsRunning() const’ is deprecated: Deprecated in ns-3.42: Use IsPending instead [-Wdeprecated-declarations]
+  501 |     if (txGenEvent.IsRunning()) {
+      |         ~~~~~~~~~~~~~~~~~~~~^~
+/home/gabuvns/ns3/newNs3/ns-allinone-3.43/ns-3.43/src/core/model/event-id.h:102:10: note: declared here
+  102 |     bool IsRunning() const;
+      |          ^~~~~~~~~
+/home/gabuvns/ns3/newNs3/ns-allinone-3.43/ns-3.43/src/applications/model/hotstuff-node.cc: In member function ‘bool ns3::HotStuffNode::IsPreCommitQC(QC_t*)’:
+/home/gabuvns/ns3/newNs3/ns-allinone-3.43/ns-3.43/src/applications/model/hotstuff-node.cc:732:51: warning: comparison of integer expressions of different signedness: ‘std::vector<std::__cxx11::basic_string<char> >::size_type’ {aka ‘long unsigned int’} and ‘int’ [-Wsign-compare]
+  732 |     return qc != nullptr && qc->signatures.size() >= (2 * n_replicas / 3 + 1);
+      |                             ~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/gabuvns/ns3/newNs3/ns-allinone-3.43/ns-3.43/src/applications/model/hotstuff-node.cc: In member function ‘void ns3::HotStuffNode::OnReceiveVote(std::string, Node_t*)’:
+/home/gabuvns/ns3/newNs3/ns-allinone-3.43/ns-3.43/src/applications/model/hotstuff-node.cc:867:50: warning: comparison of integer expressions of different signedness: ‘std::vector<std::__cxx11::basic_string<char> >::size_type’ {aka ‘long unsigned int’} and ‘int’ [-Wsign-compare]
+  867 |         if (votedNode->justify.signatures.size() >= (2 * n_replicas / 3 + 1)) {
+      |             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/gabuvns/ns3/newNs3/ns-allinone-3.43/ns-3.43/src/applications/model/hotstuff-node.cc: In member function ‘void ns3::HotStuffNode::GenerateTransaction()’:
+/home/gabuvns/ns3/newNs3/ns-allinone-3.43/ns-3.43/src/applications/model/hotstuff-node.cc:902:24: warning: comparison of integer expressions of different signedness: ‘std::__cxx11::basic_string<char>::size_type’ {aka ‘long unsigned int’} and ‘int’ [-Wsign-compare]
+  902 |     while (tx.length() < tx_size) {
+      |            ~~~~~~~~~~~~^~~~~~~~~
+/home/gabuvns/ns3/newNs3/ns-allinone-3.43/ns-3.43/src/applications/model/hotstuff-node.cc: In member function ‘void ns3::HotStuffNode::NotifyConsensusComplete()’:
+/home/gabuvns/ns3/newNs3/ns-allinone-3.43/ns-3.43/src/applications/model/hotstuff-node.cc:971:33: warning: ‘bool ns3::EventId::IsRunning() const’ is deprecated: Deprecated in ns-3.42: Use IsPending instead [-Wdeprecated-declarations]
+  971 |         if (txGenEvent.IsRunning()) txGenEvent.Cancel();
+      |             ~~~~~~~~~~~~~~~~~~~~^~
+/home/gabuvns/ns3/newNs3/ns-allinone-3.43/ns-3.43/src/core/model/event-id.h:102:10: note: declared here
+  102 |     bool IsRunning() const;
+      |          ^~~~~~~~~
+/home/gabuvns/ns3/newNs3/ns-allinone-3.43/ns-3.43/src/applications/model/hotstuff-node.cc:972:36: warning: ‘bool ns3::EventId::IsRunning() const’ is deprecated: Deprecated in ns-3.42: Use IsPending instead [-Wdeprecated-declarations]
+  972 |         if (proposalEvent.IsRunning()) proposalEvent.Cancel();
+      |             ~~~~~~~~~~~~~~~~~~~~~~~^~
+/home/gabuvns/ns3/newNs3/ns-allinone-3.43/ns-3.43/src/core/model/event-id.h:102:10: note: declared here
+  102 |     bool IsRunning() const;
+      |          ^~~~~~~~~
+/home/gabuvns/ns3/newNs3/ns-allinone-3.43/ns-3.43/src/applications/model/hotstuff-node.cc:973:38: warning: ‘bool ns3::EventId::IsRunning() const’ is deprecated: Deprecated in ns-3.42: Use IsPending instead [-Wdeprecated-declarations]
+  973 |         if (viewChangeEvent.IsRunning()) viewChangeEvent.Cancel();
+      |             ~~~~~~~~~~~~~~~~~~~~~~~~~^~
+/home/gabuvns/ns3/newNs3/ns-allinone-3.43/ns-3.43/src/core/model/event-id.h:102:10: note: declared here
+  102 |     bool IsRunning() const;
+      |          ^~~~~~~~~
+ninja: build stopped: interrupted by user.

@@ -1,591 +1,102 @@
-#include "ns3/address.h"
-#include "ns3/address-utils.h"
-#include "ns3/log.h"
-#include "ns3/inet-socket-address.h"
-#include "ns3/inet6-socket-address.h"
-#include "ns3/node.h"
-#include "ns3/socket.h"
-#include "ns3/udp-socket.h"
-#include "ns3/simulator.h"
-#include "ns3/socket-factory.h"
-#include "ns3/packet.h"
-#include "ns3/trace-source-accessor.h"
-#include "ns3/udp-socket-factory.h"
-#include "ns3/tcp-socket-factory.h"
-#include "ns3/uinteger.h"
-#include "ns3/double.h"
-#include "hotstuff-node.h"
-#include <ctime>
-#include <map>
-#include "hotstuff-node.h"
-#include "ns3/log.h"
-#include "ns3/simulator.h"
-#include "ns3/socket.h"
-#include "ns3/address-utils.h"
-#include "ns3/inet-socket-address.h"
-#include "ns3/socket-factory.h"
-#include "ns3/packet.h"
-#include "ns3/uinteger.h"
+#ifndef PBFT_NODE_H
+#define PBFT_NODE_H
 
+#include <algorithm>
+#include "ns3/application.h"
+#include "ns3/event-id.h"
+#include "ns3/ptr.h"
+#include "ns3/traced-callback.h"
+#include "ns3/address.h"
+#include "ns3/boolean.h"
+#include <map>
+#include "ns3/object.h"
 namespace ns3 {
 
-NS_LOG_COMPONENT_DEFINE("HotStuffNode");
+class Address;
+class Socket;
+class Packet;
 
-// Static member initialization
-int HotStuffNode::tx_size = 4096;              // Default 4KB
-int HotStuffNode::random_delay = 100;          // Default 100ms
-std::chrono::time_point<std::chrono::high_resolution_clock> HotStuffNode::start_time;
-int HotStuffNode::total_commits = 0;
-int HotStuffNode::total_messages = 0;
-double HotStuffNode::total_latency = 0.0;
-double HotStuffNode::base_timeout = 1000.0;    // 1 second base timeout
-double HotStuffNode::max_timeout = 5000.0;     // 5 seconds maximum timeout
-
-NS_OBJECT_ENSURE_REGISTERED(HotStuffNode);
-
-TypeId
-HotStuffNode::GetTypeId(void)
+class PbftNode : public Application 
 {
-    static TypeId tid = TypeId("ns3::HotStuffNode")
-        .SetParent<Application>()
-        .SetGroupName("Applications")
-        .AddConstructor<HotStuffNode>();
-    return tid;
-}
+  public:
+    NS_OBJECT_ENSURE_REGISTERED (PbftNode);
 
-HotStuffNode::HotStuffNode() 
-    : m_socket(0), 
-      N(0), 
-      f(0), 
-      view_number(0), 
-      is_leader(false)
-{
-    NS_LOG_FUNCTION(this);
-}
+    static TypeId GetTypeId (void);
 
-HotStuffNode::~HotStuffNode()
-{
-    NS_LOG_FUNCTION(this);
-}
+    void SetPeersAddresses (const std::vector<Ipv4Address> &peers);         // 设置所有邻节点的地址
 
-void
-HotStuffNode::StartApplication()
-{
-    NS_LOG_FUNCTION(this);
+    PbftNode (void);
+
+    virtual ~PbftNode (void);
+    static int tx_size;               // Size of transaction in bytes
+    static double network_delay;      // Network delay in seconds
+    uint32_t        m_id;                               // node id
+    Ptr<Socket>     m_socket;                           // 监听的socket
+    Ptr<Socket>     m_socketClient;                     // 客户端socket
+    std::map<Ipv4Address, Ptr<Socket>>      m_peersSockets;            // 邻节点的socket列表
+    std::map<Address, std::string>          m_bufferedData;            // map holding the buffered data from previous handleRead events
     
-    if (m_socket == 0) {
-        TypeId tid = TypeId::LookupByName("ns3::UdpSocketFactory");
-        m_socket = Socket::CreateSocket(GetNode(), tid);
-        InetSocketAddress local = InetSocketAddress(Ipv4Address::GetAny(), 7071);
-        m_socket->Bind(local);
-        m_socket->Listen();
-    }
+    Address         m_local;                            // 本节点地址
+    std::vector<Ipv4Address>  m_peersAddresses;         // 邻节点列表
 
-    m_socket->SetRecvCallback(MakeCallback(&HotStuffNode::HandleRead, this));
-    m_socket->SetAcceptCallback(
-        MakeNullCallback<bool, Ptr<Socket>, const Address &>(),
-        MakeCallback(&HotStuffNode::HandleAccept, this));
-    m_socket->SetCloseCallbacks(
-        MakeCallback(&HotStuffNode::HandlePeerClose, this),
-        MakeCallback(&HotStuffNode::HandlePeerError, this));
+    int             N;                                  // 总节点数
+    // int             v;                                  // 当前视图编号
+    // int             n;                                  // 当前消息在视图中的编号
+    std::vector<int>  values;                           // 存储要更新的数值的容器
+    int             value;                              // 交易要更新的值
+    int             leader;                             // 当前leader节点的编号
+    int             is_leader;                          // 自己是否是leader
 
-    // Initialize protocol state
-    start_time = std::chrono::high_resolution_clock::now();
-    view_number = 1;
-    is_leader = (m_id == 0);  // Node 0 starts as leader
-    
-    if (is_leader) {
-        CreateProposal();
-    }
-}
+    // int             round;                              // 共识轮数
+    int             block_num;                             // 当前区块号
+    EventId         blockEvent;                         // 广播区块的事件
+    struct TX {
+        int v;
+        int val;
+        int prepare_vote;
+        int commit_vote;
+    };
+    TX tx[1000];
 
-void
-HotStuffNode::StopApplication()
+    // 继承 Application 类必须实现的虚函数
+    virtual void StartApplication (void);    
+    virtual void StopApplication (void); 
+
+    // 处理消息
+    void HandleRead (Ptr<Socket> socket);
+
+    // 将数据包中的消息解析为字符串
+    std::string getPacketContent(Ptr<Packet> packet, Address from); 
+
+    // 向所有邻节点广播消息 
+    void Send (uint8_t data[]);
+
+    // 向某个指定地址的节点发送消息
+    void Send(uint8_t data[], Address from);
+
+    // 向所有邻节点广播区块
+    void SendBlock(void);
+
+    void viewChange(void);
+};
+
+enum Message
 {
-    NS_LOG_FUNCTION(this);
+    REQUEST,           // 0       客户端请求        <REQUEST, t>    t:交易
+    PRE_PREPARE,       // 1       预准备消息        <PRE_PREPARE, v, n, b>   v:视图编号   b:区块内容   n:该预准备消息在视图中的编号
+    PREPARE,           // 2       准备消息          <PREPARE, v, n, H(b)>
+    COMMIT,            // 3       提交             <COMMIT, v, n>
+    PRE_PREPARE_RES,   // 4       预准备消息的响应   <PRE_PREPARE_RES, v, n, S>           S:State
+    PREPARE_RES,       // 5       准备消息响应
+    COMMIT_RES,        // 6       提交响应
+    REPLY,             // 7       对客户端的回复       
+    VIEW_CHANGE        // 8       view_change消息
+};
 
-    if (m_socket != 0) {
-        m_socket->Close();
-        m_socket->SetRecvCallback(MakeNullCallback<void, Ptr<Socket>>());
-    }
-}
-
-void
-HotStuffNode::SetPeersAddresses(const std::vector<Ipv4Address> &peers)
+enum State
 {
-    NS_LOG_FUNCTION(this);
-    m_peersAddresses = peers;
-    N = peers.size() + 1;  // Including self
-    f = (N - 1) / 3;      // Maximum Byzantine nodes
-
-// Helper function for random delay
-static float GetRandomDelay() {
-    return random_delay / 1000.0; // Convert to seconds for NS3
+    SUCCESS,            // 0      成功
+    FAILED,             // 1      失败
+};
 }
-
-// Helper function to generate transaction data of specified size
-static uint8_t* GenerateTransaction(int size_kb) {
-    int size = size_kb * 1024; // Convert KB to bytes
-    uint8_t* data = new uint8_t[size];
-    for (int i = 0; i < size; i++) {
-        data[i] = rand() % 256;
-    }
-    return data;
-}
-
-NS_LOG_COMPONENT_DEFINE ("HotStuffNode");
-NS_OBJECT_ENSURE_REGISTERED (HotStuffNode);
-
-TypeId
-HotStuffNode::GetTypeId (void)
-{
-    static TypeId tid = TypeId ("ns3::HotStuffNode")
-        .SetParent<Application> ()
-        .SetGroupName("Applications")
-        .AddConstructor<HotStuffNode> ()
-        ;
-    return tid;
-}
-
-HotStuffNode::HotStuffNode(void) {
-    m_socket = 0;
-    m_socketClient = 0;
-}
-
-HotStuffNode::~HotStuffNode(void) {
-    NS_LOG_FUNCTION (this);
-}
-
-void 
-HotStuffNode::StartApplication()
-{
-    // Initialize benchmark metrics
-    if (m_id == 0) { // Only primary initializes timing
-        start_time = std::chrono::high_resolution_clock::now();
-        total_commits = 0;
-        total_messages = 0;
-        total_latency = 0.0;
-    }
-    
-    // Initialize consensus parameters
-    view_number = 1;
-    block_height = 0;
-    executed_height = 0;
-    is_leader = false;
-    
-    // Setup networking
-    if (!m_socket) {
-        TypeId tid = TypeId::LookupByName ("ns3::UdpSocketFactory");
-        m_socket = Socket::CreateSocket (GetNode (), tid);
-        InetSocketAddress local = InetSocketAddress (Ipv4Address::GetAny (), 7071);
-        m_socket->Bind (local);
-        m_socket->Listen ();
-    }
-    
-    m_socket->SetRecvCallback (MakeCallback (&HotStuffNode::HandleRead, this));
-    m_socket->SetAllowBroadcast (true);
-
-    // Connect to peers
-    std::vector<Ipv4Address>::iterator iter = m_peersAddresses.begin();
-    while(iter != m_peersAddresses.end()) {
-        TypeId tid = TypeId::LookupByName ("ns3::UdpSocketFactory");
-        Ptr<Socket> socketClient = Socket::CreateSocket (GetNode (), tid);
-        socketClient->Connect (InetSocketAddress(*iter, 7071));
-        m_peersSockets[*iter] = socketClient;
-        iter++;
-    }
-
-    // Start protocol
-    if (IsLeader(view_number)) {
-        is_leader = true;
-        CreateProposal();
-    }
-}
-
-void 
-HotStuffNode::HandleRead(Ptr<Socket> socket)
-{
-    Ptr<Packet> packet;
-    Address from;
-    Address localAddress;
-    
-    while ((packet = socket->RecvFrom (from)))
-    {
-        std::string msg = GetPacketContent(packet, from);
-        uint8_t type = msg[0] - '0';
-        std::string content = msg.substr(1);
-
-        switch (type)
-        {
-            case NEW_VIEW:
-                if (is_leader) {
-                    ProcessNewView();
-                }
-                break;
-
-            case PREPARE:
-                {
-                    Node proposal;
-                    // Deserialize proposal from content
-                    if (VerifyProposal(proposal) && SafeNode(proposal, proposal.justify)) {
-                        OnReceiveProposal(proposal);
-                    }
-                }
-                break;
-
-            case PREPARE_VOTE:
-                if (is_leader) {
-                    std::string node_hash = content.substr(0, 64);
-                    std::string signature = content.substr(64);
-                    OnReceiveVote(node_hash, signature);
-                }
-                break;
-
-            case PRE_COMMIT:
-                {
-                    QC qc;
-                    // Deserialize QC from content
-                    OnPreCommitQC(qc);
-                }
-                break;
-
-            // Add handlers for other message types...
-        }
-    }
-}
-
-bool
-HotStuffNode::SafeNode(const Node& node, const QC& qc)
-{
-    // Safety rule 1: node extends from locked node
-    bool extends_locked = false;
-    Node* current = &nodes[node.hash];
-    while (current != nullptr) {
-        if (current->hash == locked_qc.node_hash) {
-            extends_locked = true;
-            break;
-        }
-        if (current->parent_hash.empty()) break;
-        current = &nodes[current->parent_hash];
-    }
-
-    // Safety rule 2: new QC has higher view than locked QC
-    bool higher_view = (qc.view > locked_qc.view);
-
-    return extends_locked || higher_view;
-}
-
-void
-HotStuffNode::UpdateHighestQC(const QC& qc)
-{
-    if (qc.view > generic_qc.view) {
-        generic_qc = qc;
-    }
-}
-
-void
-HotStuffNode::Broadcast(uint8_t msgType, const std::string& content)
-{
-    // Create packet with benchmarking size
-    uint8_t* tx_data = GenerateTransaction(tx_size);
-    std::string msg;
-    msg.push_back(msgType + '0');
-    msg.append(content);
-    memcpy(tx_data, msg.c_str(), msg.size());
-    
-    Ptr<Packet> packet = Create<Packet>(tx_data, tx_size * 1024);
-    delete[] tx_data;
-    
-    // Send with random delay to each peer
-    for (auto& peer : m_peersSockets) {
-        total_messages++;
-        Simulator::Schedule(Seconds(GetRandomDelay()), 
-                          &Socket::Send, 
-                          peer.second, 
-                          packet);
-    }
-}
-
-
-void 
-HotStuffNode::OnReceiveProposal(Node* proposal)
-{
-    // Verify we're in the correct view
-    if (proposal->view != view_number) {
-        NS_LOG_INFO("Proposal from wrong view: " << proposal->view);
-        return;
-    }
-
-    // Update highest QC if applicable
-    if (proposal->justify) {
-        UpdateHighestQC(proposal->justify);
-    }
-
-    // Check safety rules
-    if (!SafeNode(proposal, proposal->justify)) {
-        NS_LOG_INFO("Unsafe proposal received");
-        return;
-    }
-
-    // Store the proposal
-    nodes[proposal->hash] = proposal;
-    
-    // Vote only if this forms a valid One-Chain
-    if (ReadyForPreCommit(proposal)) {
-        // Create partial signature
-        ThresholdSignature sig;
-        sig.partial_sigs.push_back(CreatePartialSig(proposal));
-        
-        // Send vote to leader
-        SendVote(proposal, sig);
-    }
-}
-
-void 
-HotStuffNode::OnPreCommitQC(QC* qc)
-{
-    if (!qc->node || !ReadyForCommit(qc->node)) {
-        return;
-    }
-
-    // Update locked QC when Two-Chain is formed
-    UpdateLockedQC(qc);
-    
-    // Create vote for commit phase
-    ThresholdSignature sig;
-    sig.partial_sigs.push_back(CreatePartialSig(qc->node));
-    
-    // Send commit vote
-    SendVote(qc->node, sig);
-}
-
-void 
-HotStuffNode::OnCommitQC(QC* qc)
-{
-    if (!qc->node || !ReadyForDecide(qc->node)) {
-        return;
-    }
-
-    // Execute command when Three-Chain is formed
-    Node* b1 = qc->node->parent->parent;  // Get base node of Three-Chain
-    ExecuteCommands(b1);
-    
-    // Move to next view
-    AdvanceView();
-}
-
-void 
-HotStuffNode::ExecuteCommands(Node* node)
-{
-    while (node && !node->executed) {
-        if (!node->cmd.data.empty()) {
-            // Execute command
-            NS_LOG_INFO("Executing command at height " << node->height);
-            node->executed = true;
-            
-            // Update metrics
-            total_commits++;
-            UpdateLatencyMetrics(node);
-        }
-        node = node->parent;
-    }
-}
-
-
-void 
-HotStuffNode::OnReceiveVote(const std::string& node_hash, const std::string& signature)
-{
-    if (!is_leader) {
-        return;
-    }
-
-    // Add vote to current proposal votes
-    if (current_proposal && current_proposal->hash == node_hash) {
-        prepare_qc.signatures.push_back(signature);
-        
-        // Check if we have enough votes for QC
-        if (prepare_qc.signatures.size() >= (2 * f + 1)) {
-            // Form prepareQC
-            prepare_qc.view = view_number;
-            prepare_qc.node_hash = node_hash;
-            
-            // Broadcast pre-commit phase
-            std::string qc_msg = SerializeQC(prepare_qc);
-            Broadcast(PRE_COMMIT, qc_msg);
-        }
-    }
-}
-
-void 
-HotStuffNode::OnPreCommitQC(const QC& qc)
-{
-    // Update highest QC
-    UpdateHighestQC(qc);
-    
-    // Set prepare QC
-    prepare_qc = qc;
-    
-    // Create pre-commit vote
-    std::string vote_msg = qc.node_hash;
-    // In practice, would add digital signature here
-    vote_msg += "signature";
-    
-    // Send to leader
-    Address leader_addr = GetLeaderAddress(view_number);
-    SendTo(leader_addr, PRE_COMMIT_VOTE, vote_msg);
-}
-
-void 
-HotStuffNode::OnCommitQC(const QC& qc)
-{
-    // Update locked QC
-    locked_qc = qc;
-    
-    // Create commit vote
-    std::string vote_msg = qc.node_hash;
-    // In practice, would add digital signature here
-    vote_msg += "signature";
-    
-    // Send to leader
-    Address leader_addr = GetLeaderAddress(view_number);
-    SendTo(leader_addr, COMMIT_VOTE, vote_msg);
-}
-
-void 
-HotStuffNode::OnDecideQC(const QC& qc)
-{
-    // Verify we have the complete branch
-    Node* node = &nodes[qc.node_hash];
-    if (!node) {
-        NS_LOG_INFO("Missing node in decide phase");
-        return;
-    }
-
-    // Execute all commands up to this point if not yet executed
-    while (node && node->height > executed_height) {
-        if (!node->command.empty()) {
-            // Track commit metrics
-            total_commits++;
-            auto now = std::chrono::high_resolution_clock::now();
-            auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(now - start_time);
-            total_latency += duration.count();
-            
-            double avg_latency = total_latency / total_commits;
-            
-            // Log metrics
-            NS_LOG_INFO("Commit " << total_commits 
-                       << " at height " << node->height 
-                       << " with avg latency " << avg_latency << "ms"
-                       << " total messages " << total_messages);
-            
-            executed_height = node->height;
-        }
-        node = node->parent_hash.empty() ? nullptr : &nodes[node->parent_hash];
-    }
-
-    // Move to next view
-    view_number++;
-    
-    // If new leader, start new view
-    if (IsLeader(view_number)) {
-        is_leader = true;
-        CreateProposal();
-    }
-}
-
-void 
-HotStuffNode::CreateProposal()
-{
-    if (!is_leader) {
-        return;
-    }
-
-    // Create new proposal node
-    Node* proposal = new Node();
-    proposal->height = block_height + 1;
-    proposal->parent_hash = generic_qc.node_hash;
-    proposal->justify = generic_qc;
-    
-    // Add command to proposal
-    proposal->command = "command"; // In practice, would get from command pool
-    
-    // Generate proposal hash
-    proposal->hash = std::to_string(view_number) + proposal->parent_hash; // Simplified hash
-    
-    // Store proposal
-    current_proposal = proposal;
-    nodes[proposal->hash] = *proposal;
-    
-    // Broadcast proposal
-    std::string proposal_msg = SerializeNode(*proposal);
-    Broadcast(PREPARE, proposal_msg);
-}
-
-void 
-HotStuffNode::SendNewView()
-{
-    // Package highest QC
-    std::string new_view_msg = SerializeQC(generic_qc);
-    
-    // Send to new leader
-    Address new_leader = GetLeaderAddress(view_number + 1);
-    SendTo(new_leader, NEW_VIEW, new_view_msg);
-    
-    // Update view
-    view_number++;
-    is_leader = IsLeader(view_number);
-}
-
-void 
-HotStuffNode::ProcessNewView()
-{
-    if (!is_leader) {
-        return;
-    }
-
-    // Wait for 2f+1 new-view messages
-    // (Simplified: in practice would track messages and verify signatures)
-    if (generic_qc.signatures.size() >= (2 * f + 1)) {
-        // Start new view by creating proposal
-        CreateProposal();
-    }
-}
-
-// Utility functions
-bool 
-HotStuffNode::IsLeader(int view)
-{
-    return (view % N) == m_id;
-}
-
-Address 
-HotStuffNode::GetLeaderAddress(int view)
-{
-    int leader_id = view % N;
-    return InetSocketAddress(m_peersAddresses[leader_id], 7071);
-}
-
-std::string 
-HotStuffNode::SerializeQC(const QC& qc)
-{
-    // Simplified serialization
-    return std::to_string(qc.view) + "," + 
-           qc.node_hash + "," + 
-           std::to_string(qc.signatures.size());
-}
-
-std::string 
-HotStuffNode::SerializeNode(const Node& node)
-{
-    // Simplified serialization
-    return node.hash + "," + 
-           node.parent_hash + "," + 
-           node.command + "," + 
-           std::to_string(node.height);
-}
-
-void 
-HotStuffNode::StopApplication()
-{
-    NS_LOG_FUNCTION(this);
-}
+#endif
