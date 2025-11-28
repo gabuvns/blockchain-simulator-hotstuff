@@ -235,16 +235,16 @@ main(int argc, char *argv[])
     // Make the simulation run for 8,16,32,62 nodes with txSize 256 and 1024, with network delay 0.01 and 0.1
     std::cout << "Running simulations with 8, 32, 64 and 128 nodes..." << std::endl;
     // Define the parameters for the simulations
-    std::vector<int> nodeCountsF = {8};
-    // std::vector<int> nodeCountsF = {16};
+    // std::vector<int> nodeCountsF = {8};
+    std::vector<int> nodeCountsF = {16};
     // std::vector<int> nodeCountsF = {32};
     // std::vector<int> nodeCountsF = {64};
 
 
-    std::vector<int> txSizesF = {256}; // Transaction sizes in bytes
-    // std::vector<int> txSizesF = {1024}; // Transaction sizes in bytes
+    // std::vector<int> txSizesF = {256}; // Transaction sizes in bytes
+    std::vector<int> txSizesF = {1024}; // Transaction sizes in bytes
 
-    std::vector<double> networkDelaysF = {0.01}; // Transaction speeds in TPS
+    std::vector<double> networkDelaysF = {0.05}; // Transaction speeds in TPS
     // std::vector<double> networkDelaysF = { 0.1}; // Transaction speeds in TPS
 
     // Run simulations for each combination of parametersint 
@@ -255,11 +255,12 @@ main(int argc, char *argv[])
           std::vector<long long> results;
             outFile << std::endl << "Simulation " << nodes << " size " << txSize<< " delay " << networkDelay <<  std::endl;
 
-          for(int i = 0; i < 1; i++) {
+          for(int i = 0; i < 30; i++) {
             std::cout << "Simulation: " << networkDelay << " "<<  txSize<< " "<<  nodes<< " " <<i<< " " << std::endl;
 
             auto startTime = std::chrono::high_resolution_clock::now();
             startSimulator(nodes, txSize, networkDelay, txSpeed);
+
             auto endTime = std::chrono::high_resolution_clock::now();
             auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
             results.push_back(milliseconds.count());

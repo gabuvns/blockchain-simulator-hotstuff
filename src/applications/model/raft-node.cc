@@ -20,7 +20,7 @@
 #include <ctime>
 #include <map>
 #include <chrono>
-int tx_speed = 8000;                  // the rate of transaction generation, in op/s
+int tx_speed = 1000;                  // the rate of transaction generation, in op/s
 int randomDelay = 0.1;              // the random delay of message, in s
 std::chrono::time_point<std::chrono::high_resolution_clock> startTime;
 
@@ -122,7 +122,6 @@ RaftNode::StartApplication ()
 void 
 RaftNode::StopApplication ()
 {
-  exit;
   // NS_LOG_INFO ("At time " << Simulator::Now ().GetSeconds () << " finish the raft consensus");
   if (is_leader == 1) {
     NS_LOG_INFO ("Blocks:" << blockNum << " Rounds:" << round);
@@ -130,6 +129,7 @@ RaftNode::StopApplication ()
     auto endTime = std::chrono::high_resolution_clock::now();
     auto secondsTime = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
     std::cout << "Tempo de execucao: " << secondsTime << std::endl;
+    std::cout << "end " << secondsTime << std::endl;
   }
 
 }
@@ -226,6 +226,7 @@ RaftNode::HandleRead (Ptr<Socket> socket)
                           Simulator::Schedule (Seconds(1), &RaftNode::setProposal, this);
                           sendHeartBeat();
                           is_leader = 1;
+
                         } 
                         else if (vote_failed >= N / 2)
                         {
@@ -260,7 +261,7 @@ RaftNode::HandleRead (Ptr<Socket> socket)
                                 Simulator::Cancel (m_nextHeartbeat);
                               }
                               // 停止心跳发送
-                              // Simulator::Cancel (m_nextHeartbeat);
+                               Simulator::Cancel (m_nextHeartbeat);
                           } 
                           else
                           {
@@ -370,7 +371,7 @@ RaftNode::SendTX (uint8_t data[], int num)
   round++;
   if (round == 50) {
     NS_LOG_INFO("node" << m_id << " has sent "<< round << " blocks at time: " << Simulator::Now ().GetSeconds () << "s");
-    // Simulator::Cancel (m_nextHeartbeat);
+    Simulator::Cancel (m_nextHeartbeat);
     add_change_value = 0;
   }
 }
@@ -422,7 +423,7 @@ RaftNode::sendHeartBeat(void) {
     // m_value = m_id;
     // NS_LOG_INFO("node" << m_id << " start send proposal: "<< data << " at time: " << Simulator::Now ().GetSeconds () << "s" );
     // 取消心跳
-    // Simulator::Cancel(m_nextHeartbeat);
+    Simulator::Cancel(m_nextHeartbeat);
     m_nextHeartbeat = Simulator::Schedule (Seconds(heartbeat_timeout), &RaftNode::sendHeartBeat, this);
     SendTX(data, num);
   } 
